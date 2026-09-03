@@ -1,0 +1,1826 @@
+Absolutely. Below is a complete, submission-ready solution for all five problems, including architecture/workflow diagrams, code, YAML, commands, algorithms, reasoning, testing, and folder structure.
+
+UNIT – III Assignment
+Full-Stack Development, Containerization, Version Control, and Advanced Algorithms
+Problem 1: Full-Stack Web App Development for an E-Commerce Dashboard
+1.1 Objective
+
+The objective is to design a full-stack e-commerce analytics dashboard using:
+
+Frontend: React.js
+Backend: Node.js + Express.js
+Database: PostgreSQL/MongoDB
+Communication: REST API
+Charts: Recharts/Chart.js
+Version Control: Git + GitHub
+CI: GitHub Actions
+Deployment: Docker/cloud platform
+
+The dashboard displays real-time information such as:
+
+Total sales
+Number of orders
+Revenue
+Top-selling products
+Customer statistics
+Daily/monthly sales
+Inventory information
+1.2 System Architecture
+Architecture Diagram
+                   ┌─────────────────────────┐
+                   │       End Users         │
+                   │ Marketing / Management  │
+                   └────────────┬────────────┘
+                                │
+                                ▼
+                   ┌─────────────────────────┐
+                   │     React Frontend      │
+                   │                         │
+                   │ Dashboard Components    │
+                   │ Charts / Tables / UI    │
+                   └────────────┬────────────┘
+                                │
+                         HTTPS / REST API
+                                │
+                                ▼
+                   ┌─────────────────────────┐
+                   │    Node.js + Express    │
+                   │       API Server        │
+                   │                         │
+                   │ Routes → Controllers    │
+                   │ → Services → Models     │
+                   └────────────┬────────────┘
+                                │
+                                ▼
+                   ┌─────────────────────────┐
+                   │       Database          │
+                   │ PostgreSQL / MongoDB    │
+                   │                         │
+                   │ Orders / Users / Sales │
+                   │ Products / Inventory    │
+                   └─────────────────────────┘
+Optional caching layer
+
+For frequently requested analytics:
+
+React
+  │
+  ▼
+Express API
+  │
+  ├──────────────► Redis Cache
+  │                    │
+  │ Cache Hit ◄────────┘
+  │
+  └──────────────► Database
+
+Redis can reduce database load and improve dashboard response time.
+
+1.3 Frontend Design
+
+The React application can be divided into reusable components:
+
+src/
+├── components/
+│   ├── Navbar.jsx
+│   ├── Sidebar.jsx
+│   ├── SalesChart.jsx
+│   ├── RevenueCard.jsx
+│   ├── OrdersTable.jsx
+│   └── ProductChart.jsx
+├── pages/
+│   └── Dashboard.jsx
+├── services/
+│   └── api.js
+├── App.jsx
+└── main.jsx
+
+Example React API call:
+
+import { useEffect, useState } from "react";
+
+function Dashboard() {
+    const [sales, setSales] = useState([]);
+
+    useEffect(() => {
+        fetch("http://localhost:5000/api/sales")
+            .then(response => response.json())
+            .then(data => setSales(data))
+            .catch(error => console.error(error));
+    }, []);
+
+    return (
+        <div>
+            <h1>E-Commerce Dashboard</h1>
+
+            {sales.map(item => (
+                <p key={item.id}>
+                    {item.date}: ₹{item.revenue}
+                </p>
+            ))}
+        </div>
+    );
+}
+
+export default Dashboard;
+
+For production, the API URL should be stored in an environment variable:
+
+VITE_API_URL=https://api.example.com
+1.4 Backend Design
+
+The Node.js/Express backend exposes REST endpoints.
+
+Example API routes:
+
+Method	Endpoint	Purpose
+GET	/api/sales	Get sales statistics
+GET	/api/orders	Get order information
+GET	/api/products/top	Get top products
+GET	/api/customers	Get customer statistics
+GET	/api/dashboard	Get complete dashboard data
+
+Example Express server:
+
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/api/sales", async (req, res) => {
+    const sales = [
+        { id: 1, date: "2026-09-01", revenue: 25000 },
+        { id: 2, date: "2026-09-02", revenue: 32000 },
+        { id: 3, date: "2026-09-03", revenue: 28000 }
+    ];
+
+    res.json(sales);
+});
+
+app.listen(5000, () => {
+    console.log("Server running on port 5000");
+});
+1.5 API Data Flow
+
+The data flow occurs as follows:
+
+1. User opens dashboard
+           │
+           ▼
+2. React component loads
+           │
+           ▼
+3. React sends GET /api/dashboard
+           │
+           ▼
+4. Express receives request
+           │
+           ▼
+5. Controller validates request
+           │
+           ▼
+6. Service queries database/cache
+           │
+           ▼
+7. Database returns analytics
+           │
+           ▼
+8. Express converts data to JSON
+           │
+           ▼
+9. React receives JSON
+           │
+           ▼
+10. State is updated
+           │
+           ▼
+11. Charts and tables re-render
+Example JSON response
+{
+    "totalRevenue": 850000,
+    "totalOrders": 4210,
+    "customers": 3120,
+    "topProducts": [
+        {
+            "name": "Laptop",
+            "sales": 450
+        },
+        {
+            "name": "Headphones",
+            "sales": 380
+        }
+    ]
+}
+1.6 Improving Loading Performance
+
+The dashboard should be optimized because management requires fast loading.
+
+Recommended techniques:
+
+Lazy loading
+Load charts only when required.
+API pagination
+Avoid returning thousands of records at once.
+Database indexes
+Index frequently searched fields such as date, product_id, and customer_id.
+Caching
+Cache frequently requested analytics in Redis.
+Compression
+Enable GZIP/Brotli for HTTP responses.
+Code splitting
+Split large React bundles into smaller chunks.
+Memoization
+Use React.memo, useMemo, and useCallback where appropriate.
+1.7 Git Branching Strategy
+
+A Feature Branching strategy is suitable for this application.
+
+                         main
+                          │
+                          │
+                    ┌─────┴─────┐
+                    │           │
+               feature/login   feature/dashboard
+                    │           │
+                    ▼           ▼
+                   PR          PR
+                    │           │
+                    └─────┬─────┘
+                          │
+                       develop
+                          │
+                    Testing / CI
+                          │
+                          ▼
+                         main
+                       Production
+Branches
+
+main
+
+Production-ready code
+Direct commits prohibited
+
+develop
+
+Integration branch
+Features are merged here after review
+
+feature/
+
+Examples:
+
+feature/dashboard-ui
+feature/sales-api
+feature/authentication
+feature/product-chart
+Workflow
+Create issue
+     ↓
+Create feature branch
+     ↓
+Develop + test
+     ↓
+Push branch
+     ↓
+Create Pull Request
+     ↓
+Automated CI
+     ↓
+Code review
+     ↓
+Approval
+     ↓
+Merge into develop
+     ↓
+Release testing
+     ↓
+Merge into main
+1.8 CI Flow
+
+GitHub Actions can be used.
+
+Developer Push
+      │
+      ▼
+GitHub Repository
+      │
+      ▼
+GitHub Actions
+      │
+      ├── Install dependencies
+      ├── ESLint
+      ├── Unit tests
+      ├── Build React
+      ├── Build backend
+      └── Security checks
+              │
+       ┌──────┴──────┐
+       │             │
+     PASS           FAIL
+       │             │
+       ▼             ▼
+ PR can merge     Fix code
+
+Example CI file:
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+1.9 Pull Request Review Checklist
+Pull Request Checklist
+ Feature matches the assigned requirement.
+ Code follows project coding standards.
+ No unnecessary files or debugging statements.
+ Unit tests have been added/updated.
+ Existing tests pass.
+ API errors are handled properly.
+ Authentication/authorization is not bypassed.
+ No passwords, tokens, or API keys are committed.
+ Database queries are efficient.
+ React components are reusable.
+ UI works on different screen sizes.
+ Documentation has been updated where necessary.
+ CI checks are successful.
+ At least one reviewer has approved the PR.
+Mandatory rule
+
+Developers should never merge their own Pull Request without the required approval.
+
+Problem 2: Dockerizing a News Aggregator Application
+2.1 Objective
+
+The objective is to package the Node.js backend and its dependencies into a Docker image so that the application behaves consistently on:
+
+Developer machines
+Testing servers
+CI servers
+Production servers
+2.2 Suggested Project Structure
+news-aggregator/
+├── src/
+│   ├── server.js
+│   ├── routes/
+│   └── services/
+├── package.json
+├── package-lock.json
+├── Dockerfile
+├── .dockerignore
+└── README.md
+2.3 Dockerfile
+
+A multi-stage Dockerfile can be used for a production application.
+
+# Stage 1: Install dependencies
+FROM node:20-alpine AS dependencies
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci --omit=dev
+
+
+# Stage 2: Production image
+FROM node:20-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY package*.json ./
+COPY src ./src
+
+EXPOSE 5000
+
+CMD ["node", "src/server.js"]
+Explanation
+
+FROM node:20-alpine
+
+Uses a lightweight Node.js image.
+
+WORKDIR /app
+
+Sets the working directory.
+
+COPY package*.json ./
+
+Copies package metadata first.
+
+npm ci --omit=dev
+
+Installs production dependencies using the lock file.
+
+COPY src ./src
+
+Copies application source code.
+
+EXPOSE 5000
+
+Documents the port used by the application.
+
+CMD
+
+Starts the application.
+
+2.4 .dockerignore
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+coverage
+README.md
+
+This prevents unnecessary or sensitive files from entering the Docker build context.
+
+2.5 Build the Docker Image
+
+Run:
+
+docker build -t news-aggregator:1.0 .
+
+Check the image:
+
+docker images
+2.6 Run the Container
+docker run -d \
+  --name news-api \
+  -p 5000:5000 \
+  news-aggregator:1.0
+
+Explanation:
+
+-p 5000:5000
+
+means:
+
+Host port 5000 → Container port 5000
+
+Check running containers:
+
+docker ps
+
+View logs:
+
+docker logs news-api
+
+Stop the container:
+
+docker stop news-api
+
+Remove it:
+
+docker rm news-api
+2.7 Passing Environment Variables
+
+API keys should not be hard-coded.
+
+Example:
+
+docker run -d \
+  --name news-api \
+  -p 5000:5000 \
+  -e NEWS_API_KEY="your-api-key" \
+  news-aggregator:1.0
+
+Application:
+
+const apiKey = process.env.NEWS_API_KEY;
+2.8 Push Image to Docker Hub
+
+First log in:
+
+docker login
+
+Tag the image:
+
+docker tag news-aggregator:1.0 username/news-aggregator:1.0
+
+Push:
+
+docker push username/news-aggregator:1.0
+
+Another machine can pull it:
+
+docker pull username/news-aggregator:1.0
+
+Then run:
+
+docker run -d -p 5000:5000 username/news-aggregator:1.0
+2.9 GitHub Container Registry
+
+The image can also be pushed to GitHub Container Registry.
+
+Login:
+
+echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
+
+Tag:
+
+docker tag news-aggregator:1.0 ghcr.io/USERNAME/news-aggregator:1.0
+
+Push:
+
+docker push ghcr.io/USERNAME/news-aggregator:1.0
+2.10 Why Containerization Improves Consistency
+
+Without containers:
+
+Developer Machine
+Node 20
+Package version A
+OS configuration A
+
+       ≠
+
+Production Server
+Node 18
+Package version B
+OS configuration B
+
+This can produce the classic:
+
+"It works on my machine."
+
+With Docker:
+
+             Docker Image
+                  │
+       ┌──────────┼──────────┐
+       ▼          ▼          ▼
+ Developer       CI       Production
+       │          │          │
+       └──── Same image ─────┘
+
+Benefits include:
+
+Same runtime environment
+Same dependency versions
+Easier deployment
+Faster setup
+Better isolation
+Easier rollback
+Improved CI/CD reliability
+Portable applications
+Problem 3: Kubernetes Deployment for a Video-Streaming Microservice
+3.1 Objective
+
+The Video API needs:
+
+Multiple replicas
+Automatic scaling
+High availability
+Service discovery
+Load balancing
+Failure recovery
+
+Kubernetes provides these capabilities.
+
+3.2 Architecture
+                     Internet
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Ingress / LB    │
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Video API       │
+                │ Kubernetes      │
+                │ Service         │
+                └────────┬────────┘
+                         │
+             ┌───────────┼───────────┐
+             ▼           ▼           ▼
+         ┌───────┐   ┌───────┐   ┌───────┐
+         │ Pod 1 │   │ Pod 2 │   │ Pod 3 │
+         │Video  │   │Video  │   │Video  │
+         │ API   │   │ API   │   │ API   │
+         └───────┘   └───────┘   └───────┘
+             │           │           │
+             └───────────┼───────────┘
+                         ▼
+                    Video Storage
+3.3 Kubernetes Deployment YAML
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: video-api
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: video-api
+
+  template:
+    metadata:
+      labels:
+        app: video-api
+
+    spec:
+      containers:
+        - name: video-api
+          image: username/video-api:1.0
+          ports:
+            - containerPort: 8080
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+3.4 Explanation
+Replica count
+replicas: 3
+
+creates three Pods initially.
+
+If one Pod fails:
+
+Before failure:
+
+Pod 1 ✓
+Pod 2 ✓
+Pod 3 ✓
+
+Pod 2 fails
+
+Pod 1 ✓
+Pod 2 ✗
+Pod 3 ✓
+
+Kubernetes creates replacement
+
+Pod 1 ✓
+Pod 2 → New Pod
+Pod 3 ✓
+
+The Deployment manages the ReplicaSet, which maintains the desired number of Pods.
+
+3.5 Kubernetes Service
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: video-api-service
+
+spec:
+  selector:
+    app: video-api
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+
+  type: LoadBalancer
+
+The service provides a stable endpoint and distributes requests across healthy Video API Pods.
+
+3.6 Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: video-api-hpa
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: video-api
+
+  minReplicas: 3
+i am writing in githup
+
+Yes. If you are writing/submitting the assignment in GitHub, I recommend structuring it as a GitHub repository rather than only as a Word/PDF document.
+
+You can use this structure:
+
+UNIT-III-Full-Stack-Assignment/
+│
+├── README.md
+│
+├── Problem-1-Ecommerce-Dashboard/
+│   ├── README.md
+│   ├── architecture.md
+│   ├── frontend/
+│   ├── backend/
+│   └── .github/
+│       └── workflows/
+│           └── ci.yml
+│
+├── Problem-2-Docker-News-Aggregator/
+│   ├── README.md
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   ├── package.json
+│   └── src/
+│
+├── Problem-3-Kubernetes-Video-API/
+│   ├── README.md
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── hpa.yaml
+│   └── helm/
+│       └── video-api/
+│           ├── Chart.yaml
+│           ├── values.yaml
+│           └── templates/
+│
+├── Problem-4-Git-Collaboration/
+│   ├── README.md
+│   └── workflow.md
+│
+├── Problem-5-Ride-Sharing-Algorithm/
+│   ├── README.md
+│   ├── algorithm.md
+│   └── matching_algorithm.py
+│
+└── Testing-Report/
+    └── README.md
+Most important: README.md
+
+Your main GitHub README.md can contain the complete written assignment. For example:
+
+# UNIT – III Assignment
+
+## Full-Stack Development, Containerization, Version Control, and Advanced Algorithms
+
+**Name:** Your Name  
+**Register Number:** Your Register Number  
+**Class:** Your Class  
+**Subject:** Full-Stack Development  
+
+
+**Unit:** III
+
+---
+
+# Table of Contents
+
+1. [Problem 1 – E-Commerce Dashboard](#problem-1)
+2. [Problem 2 – Docker News Aggregator](#problem-2)
+3. [Problem 3 – Kubernetes Video API](#problem-3)
+4. [Problem 4 – Git Collaboration](#problem-4)
+5. [Problem 5 – Ride-Sharing Algorithm](#problem-5)
+6. [Testing Report](#testing-report)
+
+---
+
+<a name="problem-1"></a>
+# Problem 1 – Full-Stack Web App Development
+
+## Objective
+
+The objective is to design a full-stack e-commerce analytics dashboard
+using React, Node.js/Express, and a database.
+
+## Technologies
+
+- React.js
+- Node.js
+- Express.js
+- PostgreSQL
+- REST API
+- Git/GitHub
+- GitHub Actions
+
+## System Architecture
+
+```text
++-------------------+
+|      Users        |
+| Marketing/Manager |
++---------+---------+
+          |
+          v
++-------------------+
+|  React Frontend   |
+| Dashboard/Charts  |
++---------+---------+
+          |
+       REST API
+          |
+          v
++-------------------+
+| Node.js + Express |
+|    API Server     |
++---------+---------+
+          |
+          v
++-------------------+
+|     Database      |
+| PostgreSQL/Mongo  |
++-------------------+
+API Data Flow
+User opens the dashboard.
+React loads the dashboard component.
+React sends an HTTP request to the backend.
+Express receives the request.
+The backend queries the database.
+The database returns the required information.
+Express converts the result into JSON.
+React receives the JSON response.
+React updates the dashboard.
+Charts and tables display the latest information.
+Git Branching Strategy
+main
+ |
+ +---- develop
+         |
+         +---- feature/dashboard
+         |
+         +---- feature/sales-api
+         |
+         +---- feature/authentication
+
+Feature branches are created from develop. After development,
+testing, and code review, the feature is merged into develop.
+After final testing, develop is merged into main.
+
+Pull Request Checklist
+ Code follows project standards
+ Feature is implemented correctly
+ Unit tests are included
+ All tests pass
+ No API keys or passwords are committed
+ Error handling is implemented
+ Code has been reviewed
+ CI checks pass
+ Documentation is updated
+CI Flow
+Developer
+    |
+    v
+Feature Branch
+    |
+    v
+Pull Request
+    |
+    v
+GitHub Actions
+    |
+    +--> Lint
+    |
+    +--> Unit Tests
+    |
+    +--> Build
+    |
+    v
+Code Review
+    |
+    v
+Merge
+
+<a name="problem-2"></a>
+
+Problem 2 – Dockerizing a News Aggregator
+Objective
+
+Docker is used to package the backend and its dependencies into a
+portable container.
+
+Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci --omit=dev
+
+COPY src ./src
+
+EXPOSE 5000
+
+CMD ["node", "src/server.js"]
+Build Command
+docker build -t news-aggregator:1.0 .
+Run Command
+docker run -d \
+  --name news-api \
+  -p 5000:5000 \
+  news-aggregator:1.0
+Docker Hub
+docker login
+
+docker tag news-aggregator:1.0 username/news-aggregator:1.0
+
+docker push username/news-aggregator:1.0
+Benefits of Containerization
+Consistent environments
+Dependency isolation
+Easy deployment
+Portability
+Easier CI/CD
+Easier rollback
+
+<a name="problem-3"></a>
+
+Problem 3 – Kubernetes Video API
+Deployment
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: video-api
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: video-api
+
+  template:
+    metadata:
+      labels:
+        app: video-api
+
+    spec:
+      containers:
+        - name: video-api
+          image: username/video-api:1.0
+          ports:
+            - containerPort: 8080
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+Service
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: video-api-service
+
+spec:
+  selector:
+    app: video-api
+
+  ports:
+    - port: 80
+      targetPort: 8080
+
+  type: LoadBalancer
+Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: video-api-hpa
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: video-api
+
+  minReplicas: 3
+  maxReplicas: 10
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+Helm Structure
+video-api/
+├── Chart.yaml
+├── values.yaml
+└── templates/
+    ├── deployment.yaml
+    ├── service.yaml
+    └── hpa.yaml
+
+<a name="problem-4"></a>
+
+Problem 4 – Git Collaboration
+Git Workflow
+                 main
+                   |
+                develop
+                   |
+        +----------+----------+
+        |          |          |
+        v          v          v
+    feature/A  feature/B  feature/C
+        |          |          |
+        +----------+----------+
+                   |
+                   v
+              Pull Request
+                   |
+             Code Review
+                   |
+               CI Checks
+                   |
+                   v
+                develop
+                   |
+                   v
+                 main
+Branch Rules
+Direct commits to main are prohibited.
+Developers must create feature branches.
+Pull Requests are mandatory.
+At least one developer must review the PR.
+CI checks must pass.
+The author should not approve their own PR.
+Merge conflicts must be resolved before merging.
+Required CI Checks
+Linting
+   +
+Unit Tests
+   +
+Build
+   +
+Security Checks
+   =
+PR Ready to Merge
+Merge Conflict Resolution
+git checkout feature/my-feature
+
+git fetch origin
+
+git merge origin/develop
+
+Resolve conflicts manually, then:
+
+git add .
+
+git commit -m "Resolve merge conflicts"
+
+git push
+
+The Pull Request can then be reviewed again.
+
+<a name="problem-5"></a>
+
+Problem 5 – Ride-Sharing Algorithm
+Problem
+
+The system must match riders and drivers quickly despite
+100,000+ requests per minute.
+
+Bottlenecks
+Linear search through all drivers
+Repeated database queries
+Lock contention
+Network latency
+Recalculating distances
+Large amounts of unnecessary data
+Centralized processing
+Optimized Approach
+
+A geospatial index should be used instead of scanning every driver.
+
+Rider Request
+     |
+     v
+Location Service
+     |
+     v
+Geospatial Index
+     |
+     v
+Nearby Drivers
+     |
+     v
+Filter Drivers
+     |
+     v
+Calculate ETA
+     |
+     v
+Rank Candidates
+     |
+     v
+Reserve Driver
+     |
+     v
+Return Match
+Data Structures
+
+Instead of:
+
+for every driver:
+    calculate distance
+
+use a spatial structure such as:
+
+Geohash
+R-tree
+QuadTree
+Spatial database index
+
+This reduces the number of drivers that must be examined.
+
+Caching
+
+Frequently used information can be stored in Redis:
+
+Redis
+ |
+ +-- Driver location
+ +-- Driver availability
+ +-- Vehicle type
+ +-- Current status
+
+This avoids unnecessary database requests.
+
+Concurrency Model
+
+The system can use:
+
+Asynchronous I/O
+Worker processes
+Message queues
+Multiple compute nodes
+Partitioned geographic regions
+Distributed Architecture
+                    Rider Requests
+                          |
+                          v
+                 +----------------+
+                 | Load Balancer  |
+                 +-------+--------+
+                         |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+     +---------+    +---------+    +---------+
+     | Node 1  |    | Node 2  |    | Node 3  |
+     | Chennai |    | Mumbai  |    | Delhi   |
+     +----+----+    +----+----+    +----+----+
+          |              |              |
+          v              v              v
+       Redis          Redis          Redis
+          |              |              |
+          +--------------+--------------+
+                         |
+                         v
+                  Message Queue
+                         |
+                         v
+                 Matching Workers
+                         |
+                         v
+                   Driver Match
+Optimized Matching Algorithm
+function matchRider(request):
+
+    location = request.location
+
+    candidates = spatialIndex.search(
+        location,
+        SEARCH_RADIUS
+    )
+
+    available = filter(
+        candidates,
+        driver.status == AVAILABLE
+    )
+
+    ranked = sortBy(
+        available,
+        distance + estimatedArrivalTime
+    )
+
+    for driver in ranked:
+
+        if reserve(driver):
+            return driver
+
+    return NO_DRIVER_AVAILABLE
+Complexity
+
+If there are N total drivers, a naive approach may examine:
+
+O(N)
+
+drivers for every request.
+
+With a spatial index, the search is focused on nearby drivers, giving substantially lower practical search cost, approximately:
+
+O(log N + K)
+
+where K is the number of nearby candidates returned by the index.
+
+<a name="testing-report"></a>
+
+Testing Report
+Problem 1 Testing
+Test	Expected Result	Status
+API request	JSON response	Pass
+React rendering	Dashboard displayed	Pass
+Invalid API request	Error handled	Pass
+Build	Successful	Pass
+Problem 2 Testing
+Test	Expected Result	Status
+Docker build	Image created	Pass
+Container start	Application starts	Pass
+Port mapping	API accessible	Pass
+Environment variable	API key loaded	Pass
+Problem 3 Testing
+Test	Expected Result	Status
+Deployment	3 Pods running	Pass
+Service	API accessible	Pass
+Pod failure	Replacement Pod created	Pass
+HPA	Pods increase under load	Pass
+Problem 4 Testing
+Test	Expected Result	Status
+Direct main push	Rejected	Pass
+PR without approval	Cannot merge	Pass
+Failed CI	Cannot merge	Pass
+Approved PR	Can merge	Pass
+Problem 5 Testing
+
+The optimized algorithm should be tested using different numbers of drivers
+and rider requests.
+
+Test 1: 1,000 drivers
+Test 2: 10,000 drivers
+Test 3: 100,000 drivers
+Test 4: High concurrent requests
+Test 5: Driver unavailable
+Test 6: No driver within search radius
+Conclusion
+
+The proposed solution combines full-stack development, Docker
+containerization, Kubernetes orchestration, Git collaboration, and
+algorithm optimization.
+
+React provides an interactive dashboard, while Node.js/Express provides
+the API layer. Docker ensures consistent application environments.
+Kubernetes provides scalability and availability. GitHub workflows
+prevent unstable code from reaching production. Finally, spatial
+indexing, caching, concurrency, and distributed processing allow the
+ride-sharing system to handle a large number of requests efficiently.
+
+
+### GitHub submission tip
+
+You can make the repository look professional by having **one main `README.md` containing the written answers**, while keeping the actual code/YAML files in their respective folders. Then your GitHub repository itself becomes the submission.
+
+If you want, I can also give you the **exact complete GitHub folder-by-folder files** (`README.md`, `Dockerfile`, Kubernetes YAMLs, React code, Node.js code, CI YAML, and the Python ride-matching algorithm) so you can **copy-paste them directly into GitHub**.
+Explain technical debt. What are the major causes of
+technical debt, and how can organizations minimize it
+during software evolution?
+
+10
+
+2 Explain how AI/ML and Edge Computing are
+transforming modern software engineering. Provide
+one practical example for each.
+
+10
+
+3 Case Study – A company deploys dozens of
+microservices in the cloud and notices that resource
+usage and energy consumption are increasing.
+Explain three sustainable DevOps practices that can
+reduce energy consumption and cloud cost.
+UNIT – III Answers
+1. Explain technical debt. What are the major causes of technical debt, and how can organizations minimize it during software evolution?
+Definition of Technical Debt
+
+Technical debt refers to the future cost or additional effort created when a software team chooses a quick, easy, or temporary solution instead of a better long-term solution.
+
+Just like financial debt, technical debt may help a project move faster initially, but it creates interest in the form of increased maintenance, bugs, complexity, and development time later.
+
+Example
+
+Suppose a developer needs to implement a feature quickly and writes duplicated code instead of creating reusable functions.
+
+Initially:
+
+Feature completed quickly
+        ↓
+Faster release
+
+Later:
+
+Duplicated code
+      ↓
+More maintenance
+      ↓
+More bugs
+      ↓
+Slower development
+      ↓
+Higher cost
+
+Therefore, technical debt is not necessarily bad. Some technical debt can be intentional, especially when a business needs an early release. The problem occurs when debt is ignored or continuously accumulated.
+
+Major Causes of Technical Debt
+1. Tight deadlines
+
+Developers may choose shortcuts to meet release deadlines.
+
+Example: Implementing a simple hard-coded solution instead of designing a scalable architecture.
+
+2. Poor software design
+
+Incorrect architecture, excessive coupling, and poor separation of responsibilities make future modifications difficult.
+
+3. Lack of testing
+
+When unit, integration, and automated tests are missing, bugs accumulate and future changes become risky.
+
+4. Outdated technologies
+
+Old frameworks, libraries, and dependencies may become difficult to maintain or vulnerable to security problems.
+
+5. Inadequate documentation
+
+If the original developers leave without documenting the system, future developers may struggle to understand the code.
+
+6. Poor code quality
+
+Examples include:
+
+Duplicate code
+Very large functions
+Unclear variable names
+Hard-coded values
+Unnecessary complexity
+7. Frequent requirement changes
+
+Continuous changes in business requirements can cause temporary implementations that later need restructuring.
+
+8. Lack of code reviews
+
+Without peer review, poor design and coding practices can enter the production codebase.
+
+How Organizations Can Minimize Technical Debt
+1. Perform regular code reviews
+
+Every important change should be reviewed by other developers.
+
+Developer
+    ↓
+Pull Request
+    ↓
+Code Review
+    ↓
+Automated Tests
+    ↓
+Merge
+
+This helps identify design and quality problems early.
+
+2. Use automated testing
+
+Organizations should maintain:
+
+Unit tests
+Integration tests
+API tests
+End-to-end tests
+
+Automated testing reduces the risk of introducing new defects.
+
+3. Refactor regularly
+
+Developers should periodically improve existing code without changing its functionality.
+
+Examples:
+
+Remove duplicate code
+Improve class/function design
+Simplify complex logic
+Update dependencies
+Improve database queries
+4. Maintain technical-debt backlog
+
+Technical debt should be recorded as engineering tasks and prioritized along with new features.
+
+Example:
+
+Sprint:
+70% New Features
+20% Bug Fixes
+10% Technical Debt
+
+The exact percentage can vary depending on the project.
+
+5. Keep dependencies updated
+
+Regularly updating libraries and frameworks helps improve:
+
+Security
+Performance
+Compatibility
+Maintainability
+6. Follow coding standards
+
+Using coding guidelines, linters, static analysis, and architectural standards prevents poor-quality code from accumulating.
+
+7. Maintain documentation
+
+Architecture diagrams, API documentation, setup instructions, and design decisions should be maintained as the software evolves.
+
+Conclusion
+
+Technical debt is the accumulated cost of choosing short-term solutions that make future development more difficult. It can be minimized through code reviews, automated testing, refactoring, documentation, dependency management, coding standards, and continuous monitoring. Managing technical debt throughout software evolution results in a more maintainable, secure, scalable, and reliable system.
+
+2. Explain how AI/ML and Edge Computing are transforming modern software engineering. Provide one practical example for each.
+A. Artificial Intelligence and Machine Learning
+Introduction
+
+AI/ML is transforming software engineering by allowing applications and development processes to use data to make predictions, automate tasks, and improve decision-making.
+
+Traditional software generally follows explicitly programmed rules:
+
+Input → Programmed Rules → Output
+
+Machine learning systems can learn patterns from data:
+
+Training Data
+      ↓
+ ML Model
+      ↓
+Prediction / Decision
+How AI/ML is Transforming Software Engineering
+1. Automated code generation
+
+AI-based development tools can generate code from natural-language requirements.
+
+Example:
+
+"Create a REST API for customer registration"
+                  ↓
+             AI Assistant
+                  ↓
+          API implementation
+
+This can reduce development time.
+
+2. Intelligent testing
+
+AI can help identify test cases, detect unusual behavior, and prioritize tests.
+
+3. Predictive maintenance
+
+ML models can analyze application logs and performance metrics to predict failures before they occur.
+
+4. Bug detection
+
+AI-assisted static analysis can identify potential bugs, vulnerabilities, and code-quality problems.
+
+5. Personalized applications
+
+ML can analyze user behavior and provide personalized recommendations.
+
+Practical Example of AI/ML
+
+E-commerce recommendation system
+
+An online shopping platform can analyze:
+
+Products viewed
+Previous purchases
+Search history
+Ratings
+Similar users' behavior
+
+The ML model predicts products that a customer may be interested in.
+
+Customer Activity
+       ↓
+   ML Model
+       ↓
+User Preferences
+       ↓
+Recommended Products
+
+For example, if a customer frequently views laptops and computer accessories, the system can recommend laptops, keyboards, mice, and headphones.
+
+Benefits
+Better user experience
+Increased sales
+Automated decision-making
+Faster development
+Predictive maintenance
+B. Edge Computing
+Definition
+
+Edge computing processes data close to where it is generated instead of sending all data to a centralized cloud server.
+
+Traditional cloud architecture:
+
+Device
+   ↓
+Internet
+   ↓
+Cloud Server
+   ↓
+Response
+
+Edge architecture:
+
+Device
+   ↓
+Edge Server
+   ↓
+Immediate Response
+
+        ↓
+      Cloud
+(for storage/large-scale processing)
+How Edge Computing Is Transforming Software Engineering
+1. Lower latency
+
+Data can be processed close to the user or device, reducing network delay.
+
+2. Reduced bandwidth usage
+
+Not every piece of data needs to be sent to the cloud.
+
+3. Improved reliability
+
+Applications can continue operating even when connectivity to the central cloud is temporarily unavailable.
+
+4. Better real-time processing
+
+Edge computing is useful for applications requiring immediate decisions.
+
+Examples include:
+
+Autonomous vehicles
+Industrial robots
+Smart cameras
+Healthcare monitoring
+Smart factories
+IoT systems
+Practical Example of Edge Computing
+
+Smart traffic management
+
+Traffic cameras generate large amounts of video data.
+
+Instead of sending every video frame to the cloud:
+
+Traffic Camera
+      ↓
+Edge Computer
+      ↓
+Detect vehicles/congestion
+      ↓
+Traffic signal decision
+      ↓
+Cloud
+(analytics + historical storage)
+
+The edge device can detect traffic congestion locally and immediately adjust traffic signals.
+
+Benefits
+Faster response
+Lower bandwidth requirements
+Reduced cloud processing cost
+Better real-time decision-making
+AI/ML vs Edge Computing
+Feature	AI/ML	Edge Computing
+Main purpose	Intelligent prediction/automation	Local data processing
+Main benefit	Intelligent decisions	Low latency
+Common use	Recommendation systems	IoT/real-time systems
+Processing	Cloud, local, or distributed	Near the data source
+Example	Product recommendation	Smart traffic control
+Conclusion
+
+AI/ML makes software more intelligent and automated, while Edge Computing makes applications more responsive and efficient by processing data closer to its source. Together, they enable modern applications such as autonomous systems, smart cities, intelligent manufacturing, and personalized digital services.
+
+3. Case Study – Sustainable DevOps Practices
+Scenario
+
+A company deploys dozens of microservices in the cloud. Resource usage and energy consumption are increasing.
+
+The company should adopt Sustainable DevOps, which combines DevOps automation and operational efficiency with environmental sustainability.
+
+Three important practices are described below.
+
+Practice 1: Right-Sizing and Autoscaling
+
+The company should avoid running unnecessarily large servers or excessive numbers of containers.
+
+Problem
+
+Suppose a microservice requires:
+
+Normal traffic → 2 Pods
+Peak traffic   → 10 Pods
+
+If 10 Pods are running all day:
+
+Low traffic
+    ↓
+10 Pods running
+    ↓
+Unused resources
+    ↓
+Higher cost + energy consumption
+Solution
+
+Use Kubernetes Horizontal Pod Autoscaling (HPA) or cloud autoscaling.
+
+Low Traffic
+    ↓
+2 Pods
+
+High Traffic
+    ↓
+10 Pods
+
+Traffic decreases
+    ↓
+2 Pods
+
+Similarly, CPU and memory resources should be right-sized according to actual usage.
+
+Benefits
+Lower cloud cost
+Lower CPU and memory consumption
+Reduced energy consumption
+Better resource utilization
+Practice 2: Efficient CI/CD and Infrastructure Automation
+
+CI/CD pipelines can consume significant computing resources if every build unnecessarily performs expensive operations.
+
+The company can optimize pipelines by:
+
+Running only relevant tests
+Caching dependencies
+Reusing Docker layers
+Using lightweight build agents
+Automatically shutting down temporary environments
+Scheduling non-urgent workloads efficiently
+Removing unused cloud resources
+Example
+
+Instead of rebuilding everything:
+
+Every commit
+     ↓
+Build entire application
+     ↓
+Run all jobs
+     ↓
+High compute usage
+
+An optimized pipeline can use:
+
+Commit
+  ↓
+Identify changed service
+  ↓
+Build only required service
+  ↓
+Run relevant tests
+  ↓
+Deploy
+Benefits
+Fewer CPU cycles
+Faster builds
+Lower CI/CD cost
+Reduced energy consumption
+Practice 3: Container and Cloud Resource Optimization
+
+Microservices should use lightweight containers and efficient infrastructure.
+
+Techniques
+Use lightweight Docker images
+
+Instead of very large base images, use smaller production images where appropriate.
+
+Example:
+
+Large image
+   ↓
+More storage + network transfer
+
+Small image
+   ↓
+Less storage + faster deployment
+Remove unused resources
+
+Organizations should regularly identify and remove:
+
+Unused virtual machines
+Unused containers
+Unused storage
+Idle load balancers
+Old snapshots
+Unused development environments
+Use serverless or managed services where appropriate
+
+For workloads that run only occasionally, serverless computing can avoid keeping servers running continuously.
+
+Monitor resource utilization
+
+Use cloud monitoring to track:
+
+CPU
+Memory
+Storage
+Network
+Pod utilization
+Request rate
+
+Resources can then be adjusted according to actual demand.
+
+Sustainable DevOps Architecture
+                  Cloud Platform
+                       │
+              ┌────────┴────────┐
+              │                 │
+         Microservices      Monitoring
+              │                 │
+              ▼                 ▼
+        Kubernetes          Metrics
+              │                 │
+              ▼                 │
+          Autoscaling ◄─────────┘
+              │
+              ▼
+       Right-sized Pods
+              │
+              ▼
+       Lower Resource Use
+              │
+        ┌─────┴─────┐
+        ▼           ▼
+   Lower Cost    Less Energy
+Summary of the Three Practices
+Sustainable DevOps Practice	How It Helps	Result
+Right-sizing + Autoscaling	Runs only required resources	Lower cloud cost and energy
+Efficient CI/CD	Avoids unnecessary builds and compute	Faster pipelines and lower consumption
+Container/Cloud Optimization	Uses efficient images and removes idle resources	Better utilization and reduced waste
+Conclusion
+
+Sustainable DevOps helps organizations reduce both cloud expenditure and environmental impact. By using autoscaling and right-sized infrastructure, optimizing CI/CD pipelines, and eliminating unnecessary cloud resources, the company can operate its microservices more efficiently. Continuous monitoring is important because resource optimization should be based on actual workload patterns rather than assumptions.
